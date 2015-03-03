@@ -58,25 +58,41 @@ when 'rhel'
     end
 
     rpm_installed = "rpm -qa | grep -q '^runit'"
-    cookbook_file "#{Chef::Config[:file_cache_path]}/runit-2.1.1.tar.gz" do
-      source 'runit-2.1.1.tar.gz'
+    cookbook_file "#{Chef::Config[:file_cache_path]}/runit-2.1.2.tar.gz" do
+      source 'runit-2.1.2.tar.gz'
       not_if rpm_installed
       notifies :run, 'bash[rhel_build_install]', :immediately
     end
 
-    bash 'rhel_build_install' do
-      user 'root'
-      cwd Chef::Config[:file_cache_path]
-      code <<-EOH
-        tar xzf runit-2.1.1.tar.gz
-        cd runit-2.1.1
-        ./build.sh
-        rpm_root_dir=`rpm --eval '%{_rpmdir}'`
-        rpm -ivh "${rpm_root_dir}/runit-2.1.1.rpm"
-      EOH
-      action :run
-      not_if rpm_installed
-    end
+	if node['platform_version'].to_i >= 7
+		bash 'rhel_build_install' do
+		  user 'root'
+		  cwd Chef::Config[:file_cache_path]
+		  code <<-EOH
+			tar xzf runit-2.1.2.tar.gz
+			cd runit-2.1.2
+			./build.sh
+			rpm_root_dir=`rpm --eval '%{_rpmdir}/%{_arch}'`
+			rpm -ivh "${rpm_root_dir}/runit-2.1.2-1.el7.centos.x86_64.rpm"
+		  EOH
+		  action :run
+		  not_if rpm_installed
+		end
+	else
+		bash 'rhel_build_install' do
+		  user 'root'
+		  cwd Chef::Config[:file_cache_path]
+		  code <<-EOH
+			tar xzf runit-2.1.2.tar.gz
+			cd runit-2.1.2
+			./build.sh
+			rpm_root_dir=`rpm --eval '%{_rpmdir}/%{_arch}'`
+			rpm -ivh "${rpm_root_dir}/runit-2.1.2-1.el6.centos.x86_64.rpm"
+		  EOH
+		  action :run
+		  not_if rpm_installed
+		end
+	end
   end
 
 when 'debian', 'gentoo'
